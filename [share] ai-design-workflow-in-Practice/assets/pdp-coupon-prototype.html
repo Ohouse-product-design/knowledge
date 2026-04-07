@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDP ATF 쿠폰 영역 프로토타입</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, 'Apple SD Gothic Neo', sans-serif; background: #f5f5f5; display: flex; justify-content: center; gap: 40px; padding: 40px 20px; min-height: 100vh; }
+
+  /* Control Panel */
+  .control-panel {
+    width: 320px;
+    background: #1a1a2e;
+    border-radius: 16px;
+    padding: 24px;
+    color: #fff;
+    height: fit-content;
+    position: sticky;
+    top: 40px;
+  }
+  .control-panel h2 { font-size: 16px; font-weight: 700; margin-bottom: 20px; color: #4ade80; }
+  .control-group { margin-bottom: 20px; }
+  .control-group h3 { font-size: 13px; font-weight: 600; color: #94a3b8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+  .toggle-row label { font-size: 14px; color: #e2e8f0; }
+  .toggle { position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; }
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle .slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: #475569; border-radius: 12px; transition: 0.3s; }
+  .toggle input:checked + .slider { background: #4ade80; }
+  .toggle .slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.3s; }
+  .toggle input:checked + .slider::before { transform: translateX(20px); }
+  .divider { height: 1px; background: #334155; margin: 16px 0; }
+  .spec-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-top: 4px; }
+  .spec-badge.active { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .spec-badge.inactive { background: rgba(239,68,68,0.15); color: #f87171; }
+  .current-spec { font-size: 12px; color: #94a3b8; margin-top: 8px; line-height: 1.6; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+  .current-spec strong { color: #e2e8f0; }
+
+  /* Phone Mockup */
+  .phone-wrap { width: 375px; flex-shrink: 0; }
+  .phone {
+    width: 375px;
+    background: #fff;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    border: 8px solid #1a1a2e;
+  }
+
+  /* Status Bar */
+  .status-bar { height: 54px; background: #fff; display: flex; align-items: flex-end; padding: 0 20px 8px; justify-content: space-between; }
+  .status-time { font-size: 15px; font-weight: 600; }
+  .status-icons { display: flex; gap: 4px; align-items: center; }
+  .status-icons span { font-size: 12px; }
+
+  /* Nav Bar */
+  .nav-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid #f0f0f0; }
+  .nav-left, .nav-right { display: flex; gap: 8px; align-items: center; }
+  .nav-icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; color: #333; font-size: 18px; }
+  .nav-title { font-size: 14px; color: #999; flex: 1; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px; }
+
+  /* Thumbnail */
+  .thumbnail { width: 100%; aspect-ratio: 1; background: linear-gradient(135deg, #e8e8e8, #d0d0d0); display: flex; align-items: center; justify-content: center; }
+  .thumbnail-placeholder { font-size: 14px; color: #999; }
+
+  /* Price Section */
+  .price-section { padding: 16px; }
+  .brand-name { font-size: 13px; color: #999; margin-bottom: 4px; }
+  .product-name { font-size: 15px; color: #333; font-weight: 400; margin-bottom: 8px; line-height: 1.4; }
+  .review-row { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
+  .stars { display: inline-flex; align-items: center; }
+  .review-count { font-size: 13px; color: #999; }
+
+  /* Price Info */
+  .price-info { display: flex; align-items: flex-end; justify-content: space-between; }
+  .price-left { flex: 1; }
+  .original-price-row { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
+  .discount-rate { font-size: 13px; color: #999; font-weight: 600; }
+  .original-price { font-size: 13px; color: #999; text-decoration: line-through; }
+  .sale-price-row { display: flex; align-items: center; }
+  .sale-price { font-size: 18px; font-weight: 700; color: #111; }
+  .coupon-button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    padding: 6px 12px; border-radius: 6px;
+    font-size: 13px; font-weight: 600;
+    border: 1px solid #e0e0e0; background: #fff; color: #333;
+    cursor: pointer; transition: all 0.2s;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .coupon-button:hover { background: #f8f8f8; }
+  .coupon-button .icon { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+  .coupon-button .icon svg { vertical-align: middle; }
+  .coupon-button.hidden { display: none !important; }
+
+  /* Coupon Price */
+  .coupon-price-row {
+    display: flex; align-items: center;
+    margin-top: 2px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  .coupon-price-row.hidden { height: 0; margin: 0; opacity: 0; }
+  .coupon-price { font-size: 18px; font-weight: 700; color: #f43f5e; }
+  .coupon-price-label { font-size: 13px; color: #f43f5e; margin-left: 4px; }
+
+  /* Special Price */
+  .special-price { font-size: 13px; color: #f43f5e; margin-top: 8px; display: flex; align-items: center; gap: 4px; }
+  .special-price .highlight { color: #f43f5e; font-weight: 600; }
+
+  /* Coupon Banners */
+  .coupon-banners { padding: 0 16px; display: flex; flex-direction: column; gap: 4px; }
+  .coupon-banner {
+    display: flex; align-items: flex-start; padding: 10px 12px;
+    background: #f8f8f8; border-radius: 10px;
+    transition: all 0.3s ease; overflow: hidden;
+    cursor: pointer;
+  }
+  .coupon-banner.package:hover { background: #f0f0f0; }
+  .coupon-banner.hidden { height: 0; padding: 0 12px; margin: 0; opacity: 0; }
+  .coupon-banner .banner-icon { width: 18px; height: 18px; margin-right: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .coupon-banner .banner-content { flex: 1; }
+  .coupon-banner .banner-title { font-size: 14px; font-weight: 400; color: #333; }
+  .coupon-banner .banner-title .price-highlight { color: #333; font-weight: 700; }
+  .coupon-banner .banner-sub { font-size: 12px; color: #999; margin-top: 2px; }
+  .coupon-banner .banner-arrow { color: #111; font-size: 22px; font-weight: 700; display: flex; align-items: center; align-self: center; }
+
+  .banner-icon.cart { color: #666; font-size: 16px; }
+  .banner-icon.package { font-size: 14px; }
+
+  /* Benefits Section */
+  .benefits-section { padding: 16px; border-top: 1px solid #f0f0f0; margin-top: 12px; }
+  .benefit-row { display: flex; align-items: flex-start; padding: 4px 0; }
+  .benefit-label { font-size: 13px; color: #999; width: 40px; flex-shrink: 0; }
+  .benefit-value { font-size: 13px; color: #333; }
+
+  /* CTA Bar */
+  .cta-bar { display: flex; align-items: center; padding: 8px 16px 24px; gap: 8px; border-top: 1px solid #eee; background: #fff; }
+  .cta-icon-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 44px; gap: 2px; cursor: pointer; background: none; border: none; padding: 0; }
+  .cta-icon-btn .cta-label { font-size: 10px; color: #999; }
+  .cta-sub-btn { height: 44px; padding: 0; background: none; border: none; font-size: 10px; font-weight: 500; color: #999; cursor: pointer; white-space: nowrap; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 44px; }
+  .cta-sub-btn:hover { opacity: 0.8; }
+  .cta-sub-btn svg { display: block; }
+  .cta-buy { flex: 1; height: 44px; background: #00A1FF; color: #fff; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .cta-buy:hover { background: #0090e6; }
+
+  /* Animations */
+  .fade-enter { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Spec overlay */
+  .spec-overlay {
+    position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border: 2px solid transparent; border-radius: 12px;
+    pointer-events: none; transition: border-color 0.3s;
+  }
+  .highlight-area { position: relative; }
+  .highlight-area.changed .spec-overlay { border-color: #4ade80; }
+
+  .phone-label { text-align: center; margin-bottom: 12px; font-size: 14px; font-weight: 600; color: #666; }
+  .phone-label .plan-tag { display: inline-block; padding: 2px 10px; border-radius: 6px; font-size: 13px; font-weight: 700; margin-right: 6px; }
+  .phone-label .plan-tag.b { background: #1a1a2e; color: #4ade80; }
+  .phone-label .plan-tag.c { background: #1a1a2e; color: #f0abfc; }
+</style>
+</head>
+<body>
+
+<div class="control-panel">
+  <h2>PDP ATF 쿠폰 영역 노출 스펙</h2>
+
+  <div class="control-group">
+    <h3>가격 표시</h3>
+    <div class="toggle-row">
+      <label>정상가 / 할인율</label>
+      <label class="toggle">
+        <input type="checkbox" id="showOriginalPrice" checked onchange="updateUI()">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="control-group">
+    <h3>상품쿠폰</h3>
+    <div class="toggle-row">
+      <label>일반 상품쿠폰</label>
+      <label class="toggle">
+        <input type="checkbox" id="normalCoupon" checked onchange="updateUI()">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="toggle-row">
+      <label>패키지 상품쿠폰</label>
+      <label class="toggle">
+        <input type="checkbox" id="packageCoupon" checked onchange="updateUI()">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="control-group">
+    <h3>장바구니 쿠폰</h3>
+    <div class="toggle-row">
+      <label>장바구니 쿠폰</label>
+      <label class="toggle">
+        <input type="checkbox" id="cartCoupon" checked onchange="updateUI()">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <h3>쿠폰 보유 상태</h3>
+    <div class="toggle-row">
+      <label>적용 가능 쿠폰 모두 수령 완료</label>
+      <label class="toggle">
+        <input type="checkbox" id="allCouponsOwned" onchange="updateUI()">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div id="specDescription" class="current-spec"></div>
+</div>
+
+<!-- B안 Phone -->
+<div class="phone-wrap">
+  <div class="phone-label"><span class="plan-tag b">B안</span> 할인가 직접 노출</div>
+  <div class="phone">
+    <div class="status-bar">
+      <div class="status-time">9:41</div>
+      <div class="status-icons"><span>&#9679;&#9679;&#9679;&#9679;</span></div>
+    </div>
+    <div class="nav-bar">
+      <div class="nav-left">
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="nav-title">S9 MaxV Ultra 직배수 로봇청소기</div>
+      <div class="nav-right">
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#333" stroke-width="1.5"/><path d="M16 16l4.5 4.5" stroke="#333" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 3h2l1.5 8.2a2 2 0 002 1.8h8a2 2 0 002-1.6L20 7H6" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.5" r="1.5" fill="#333"/><circle cx="17.5" cy="19.5" r="1.5" fill="#333"/></svg></div>
+      </div>
+    </div>
+    <div class="thumbnail" style="height: 200px; aspect-ratio: auto;">
+      <div class="thumbnail-placeholder">상품 이미지</div>
+    </div>
+    <div class="price-section">
+      <div class="brand-name">로보락</div>
+      <div class="product-name">S9 MaxV Ultra 직배수 로봇청소기</div>
+      <div class="review-row">
+        <span class="stars"><svg width="80" height="14" viewBox="0 0 80 14" fill="none"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.2 3.3 12.3l.7-4.1-3-2.9 4.2-.7L7 1z" fill="#00A1FF"/><path d="M23 1l1.8 3.6 4.2.7-3 2.9.7 4.1L23 10.2l-3.7 2.1.7-4.1-3-2.9 4.2-.7L23 1z" fill="#00A1FF"/><path d="M39 1l1.8 3.6 4.2.7-3 2.9.7 4.1L39 10.2l-3.7 2.1.7-4.1-3-2.9 4.2-.7L39 1z" fill="#00A1FF"/><path d="M55 1l1.8 3.6 4.2.7-3 2.9.7 4.1L55 10.2l-3.7 2.1.7-4.1-3-2.9 4.2-.7L55 1z" fill="#ddd"/><clipPath id="halfstarB"><rect x="48" y="0" width="7" height="14"/></clipPath><path d="M55 1l1.8 3.6 4.2.7-3 2.9.7 4.1L55 10.2l-3.7 2.1.7-4.1-3-2.9 4.2-.7L55 1z" fill="#00A1FF" clip-path="url(#halfstarB)"/><path d="M71 1l1.8 3.6 4.2.7-3 2.9.7 4.1L71 10.2l-3.7 2.1.7-4.1-3-2.9 4.2-.7L71 1z" fill="#ddd"/></svg></span>
+        <span class="review-count" style="color:#00A1FF">(257) &rsaquo;</span>
+      </div>
+      <div class="price-info">
+        <div class="price-left">
+          <div class="original-price-row" id="B_originalPriceRow">
+            <span class="discount-rate">12%</span>
+            <span class="original-price">1,990,000</span>
+          </div>
+          <div class="sale-price-row">
+            <span class="sale-price">1,740,000원</span>
+          </div>
+          <div class="coupon-price-row" id="B_couponPriceRow">
+            <span class="coupon-price">1,566,000원</span>
+            <span class="coupon-price-label">쿠폰할인가</span>
+          </div>
+        </div>
+        <button class="coupon-button" id="B_couponBtn" onclick="handleCouponClick()">
+          <span class="icon" id="B_couponBtnIconLeft"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v9M4.5 6.5L8 10l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+          <span id="B_couponBtnText">쿠폰 받기</span>
+          <span class="icon chevron-right" id="B_couponBtnIconRight" style="display:none;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+      </div>
+      <div class="special-price">
+        <span class="highlight">특별 인증가</span> 매일 온라인 최저가 수준으로 유지중 &#9432;
+      </div>
+    </div>
+    <div class="coupon-banners">
+      <div class="coupon-banner cart-banner" id="B_cartBanner" style="cursor:default;">
+        <div class="banner-icon cart"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M1.5 1.5h2l1.2 6.6a1.5 1.5 0 001.5 1.2h6.6a1.5 1.5 0 001.5-1.2l1.2-5.4H5.1" stroke="#666" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="15" r="1.2" fill="#666"/><circle cx="13.5" cy="15" r="1.2" fill="#666"/></svg></div>
+        <div class="banner-content">
+          <div class="banner-title" id="B_cartBannerTitle">쿠폰가에서 <span class="price-highlight">3만원 더 할인돼요</span></div>
+          <div class="banner-sub" id="B_cartBannerSub">40만원 이상 결제시 장바구니 쿠폰 적용</div>
+        </div>
+      </div>
+      <div class="coupon-banner package" id="B_packageBanner">
+        <div class="banner-icon package"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="16" rx="4" fill="#FF6B9D"/><text x="9" y="13" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">%</text></svg></div>
+        <div class="banner-content">
+          <div class="banner-title" id="B_packageBannerTitle">패키지할인 받으면 <span class="price-highlight">1,479,000원</span></div>
+          <div class="banner-sub" id="B_packageBannerSub">장바구니 쿠폰 중복 적용 가능</div>
+        </div>
+        <div class="banner-arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+    </div>
+    <div class="benefits-section">
+      <div class="benefit-row">
+        <span class="benefit-label">혜택</span>
+        <span class="benefit-value">52,200P 적립 (VIP 3%적용)<br>월 290,000원 (6개월) 무이자할부 &rsaquo;</span>
+      </div>
+      <div class="benefit-row" style="margin-top: 8px;">
+        <span class="benefit-label">배송</span>
+        <span class="benefit-value">무료배송<br>주문제작 | 업체직접배송</span>
+      </div>
+    </div>
+    <div class="cta-bar">
+      <button class="cta-icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M19 21l-7-4-7 4V5a2 2 0 012-2h10a2 2 0 012 2z" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="cta-label">1,234</span></button>
+      <button class="cta-sub-btn"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="1" y="1" width="20" height="20" rx="5" fill="#FF6B9D"/><path d="M8 8.5L10.5 6 8 3.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13.5L11.5 16 14 18.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="15" r="2" stroke="#fff" stroke-width="1.3"/><circle cx="14.5" cy="7" r="2" stroke="#fff" stroke-width="1.3"/></svg><span>패키지담기</span></button>
+      <button class="cta-buy">구매하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- C안 Phone -->
+<div class="phone-wrap">
+  <div class="phone-label"><span class="plan-tag c">C안</span> 차액 노출</div>
+  <div class="phone">
+    <div class="status-bar">
+      <div class="status-time">9:41</div>
+      <div class="status-icons"><span>&#9679;&#9679;&#9679;&#9679;</span></div>
+    </div>
+    <div class="nav-bar">
+      <div class="nav-left">
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="nav-title">S9 MaxV Ultra 직배수 로봇청소기</div>
+      <div class="nav-right">
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#333" stroke-width="1.5"/><path d="M16 16l4.5 4.5" stroke="#333" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+        <div class="nav-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 3h2l1.5 8.2a2 2 0 002 1.8h8a2 2 0 002-1.6L20 7H6" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.5" r="1.5" fill="#333"/><circle cx="17.5" cy="19.5" r="1.5" fill="#333"/></svg></div>
+      </div>
+    </div>
+    <div class="thumbnail" style="height: 200px; aspect-ratio: auto;">
+      <div class="thumbnail-placeholder">상품 이미지</div>
+    </div>
+    <div class="price-section">
+      <div class="brand-name">로보락</div>
+      <div class="product-name">S9 MaxV Ultra 직배수 로봇청소기</div>
+      <div class="review-row">
+        <span class="stars"><svg width="80" height="14" viewBox="0 0 80 14" fill="none"><path d="M7 1l1.8 3.6L13 5.3l-3 2.9.7 4.1L7 10.2 3.3 12.3l.7-4.1-3-2.9 4.2-.7L7 1z" fill="#00A1FF"/><path d="M23 1l1.8 3.6 4.2.7-3 2.9.7 4.1L23 10.2l-3.7 2.1.7-4.1-3-2.9 4.2-.7L23 1z" fill="#00A1FF"/><path d="M39 1l1.8 3.6 4.2.7-3 2.9.7 4.1L39 10.2l-3.7 2.1.7-4.1-3-2.9 4.2-.7L39 1z" fill="#00A1FF"/><path d="M55 1l1.8 3.6 4.2.7-3 2.9.7 4.1L55 10.2l-3.7 2.1.7-4.1-3-2.9 4.2-.7L55 1z" fill="#ddd"/><clipPath id="halfstarC"><rect x="48" y="0" width="7" height="14"/></clipPath><path d="M55 1l1.8 3.6 4.2.7-3 2.9.7 4.1L55 10.2l-3.7 2.1.7-4.1-3-2.9 4.2-.7L55 1z" fill="#00A1FF" clip-path="url(#halfstarC)"/><path d="M71 1l1.8 3.6 4.2.7-3 2.9.7 4.1L71 10.2l-3.7 2.1.7-4.1-3-2.9 4.2-.7L71 1z" fill="#ddd"/></svg></span>
+        <span class="review-count" style="color:#00A1FF">(257) &rsaquo;</span>
+      </div>
+      <div class="price-info">
+        <div class="price-left">
+          <div class="original-price-row" id="C_originalPriceRow">
+            <span class="discount-rate">12%</span>
+            <span class="original-price">1,990,000</span>
+          </div>
+          <div class="sale-price-row">
+            <span class="sale-price">1,740,000원</span>
+          </div>
+          <div class="coupon-price-row" id="C_couponPriceRow">
+            <span class="coupon-price">1,566,000원</span>
+            <span class="coupon-price-label">쿠폰할인가</span>
+          </div>
+        </div>
+        <button class="coupon-button" id="C_couponBtn" onclick="handleCouponClick()">
+          <span class="icon" id="C_couponBtnIconLeft"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v9M4.5 6.5L8 10l3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+          <span id="C_couponBtnText">쿠폰 받기</span>
+          <span class="icon chevron-right" id="C_couponBtnIconRight" style="display:none;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </button>
+      </div>
+      <div class="special-price">
+        <span class="highlight">특별 인증가</span> 매일 온라인 최저가 수준으로 유지중 &#9432;
+      </div>
+    </div>
+    <div class="coupon-banners">
+      <div class="coupon-banner cart-banner" id="C_cartBanner" style="cursor:default;">
+        <div class="banner-icon cart"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M1.5 1.5h2l1.2 6.6a1.5 1.5 0 001.5 1.2h6.6a1.5 1.5 0 001.5-1.2l1.2-5.4H5.1" stroke="#666" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="15" r="1.2" fill="#666"/><circle cx="13.5" cy="15" r="1.2" fill="#666"/></svg></div>
+        <div class="banner-content">
+          <div class="banner-title" id="C_cartBannerTitle">쿠폰가에서 <span class="price-highlight">3만원 더 할인돼요</span></div>
+          <div class="banner-sub" id="C_cartBannerSub">40만원 이상 결제시 장바구니 쿠폰 적용</div>
+        </div>
+      </div>
+      <div class="coupon-banner package" id="C_packageBanner">
+        <div class="banner-icon package"><svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="16" rx="4" fill="#FF6B9D"/><text x="9" y="13" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">%</text></svg></div>
+        <div class="banner-content">
+          <div class="banner-title" id="C_packageBannerTitle">패키지로 사면 쿠폰가보다 <span class="price-highlight">87,000원 더 저렴</span></div>
+          <div class="banner-sub" id="C_packageBannerSub">장바구니 쿠폰 중복 적용 가능</div>
+        </div>
+        <div class="banner-arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="#111" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+    </div>
+    <div class="benefits-section">
+      <div class="benefit-row">
+        <span class="benefit-label">혜택</span>
+        <span class="benefit-value">52,200P 적립 (VIP 3%적용)<br>월 290,000원 (6개월) 무이자할부 &rsaquo;</span>
+      </div>
+      <div class="benefit-row" style="margin-top: 8px;">
+        <span class="benefit-label">배송</span>
+        <span class="benefit-value">무료배송<br>주문제작 | 업체직접배송</span>
+      </div>
+    </div>
+    <div class="cta-bar">
+      <button class="cta-icon-btn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M19 21l-7-4-7 4V5a2 2 0 012-2h10a2 2 0 012 2z" stroke="#333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="cta-label">1,234</span></button>
+      <button class="cta-sub-btn"><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="1" y="1" width="20" height="20" rx="5" fill="#FF6B9D"/><path d="M8 8.5L10.5 6 8 3.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 13.5L11.5 16 14 18.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="15" r="2" stroke="#fff" stroke-width="1.3"/><circle cx="14.5" cy="7" r="2" stroke="#fff" stroke-width="1.3"/></svg><span>패키지담기</span></button>
+      <button class="cta-buy">구매하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function updatePhone(prefix, planType) {
+  const showOriginal = document.getElementById('showOriginalPrice').checked;
+  const hasNormal = document.getElementById('normalCoupon').checked;
+  const hasPackage = document.getElementById('packageCoupon').checked;
+  const hasCart = document.getElementById('cartCoupon').checked;
+  const allOwned = document.getElementById('allCouponsOwned').checked;
+  const hasCoupon = hasNormal || hasPackage || hasCart;
+
+  // 정상가 / 할인율
+  document.getElementById(prefix + '_originalPriceRow').style.display = showOriginal ? 'flex' : 'none';
+
+  // 1. 쿠폰할인가
+  const couponPriceRow = document.getElementById(prefix + '_couponPriceRow');
+  if (hasNormal) {
+    couponPriceRow.classList.remove('hidden');
+  } else {
+    couponPriceRow.classList.add('hidden');
+  }
+
+  // 2. 쿠폰 버튼
+  const couponBtn = document.getElementById(prefix + '_couponBtn');
+  const couponBtnText = document.getElementById(prefix + '_couponBtnText');
+  if (!hasCoupon) {
+    couponBtn.classList.add('hidden');
+  } else {
+    couponBtn.classList.remove('hidden');
+    const iconLeft = document.getElementById(prefix + '_couponBtnIconLeft');
+    const iconRight = document.getElementById(prefix + '_couponBtnIconRight');
+    if (allOwned) {
+      couponBtnText.textContent = '받은쿠폰보기';
+      iconLeft.style.display = 'none';
+      iconRight.style.display = '';
+    } else {
+      couponBtnText.textContent = '쿠폰 받기';
+      iconLeft.style.display = '';
+      iconRight.style.display = 'none';
+    }
+  }
+
+  // 3. 장바구니 쿠폰 배너
+  const cartBanner = document.getElementById(prefix + '_cartBanner');
+  const cartBannerTitle = document.getElementById(prefix + '_cartBannerTitle');
+  if (hasCart) {
+    cartBanner.classList.remove('hidden');
+    if (hasNormal) {
+      cartBannerTitle.innerHTML = '쿠폰가에서 <span class="price-highlight">3만원 더 할인돼요</span>';
+    } else {
+      cartBannerTitle.innerHTML = '여기서 <span class="price-highlight">3만원 더 할인돼요</span>';
+    }
+  } else {
+    cartBanner.classList.add('hidden');
+  }
+
+  // 4. 패키지 쿠폰 배너
+  const packageBanner = document.getElementById(prefix + '_packageBanner');
+  const packageBannerTitle = document.getElementById(prefix + '_packageBannerTitle');
+  const packageBannerSub = document.getElementById(prefix + '_packageBannerSub');
+  packageBanner.classList.remove('hidden');
+
+  if (planType === 'B') {
+    if (hasPackage) {
+      packageBannerTitle.innerHTML = '패키지할인 받으면 <span class="price-highlight">1,479,000원</span>';
+    } else {
+      packageBannerTitle.innerHTML = '패키지로 구매하면 <span class="price-highlight">더 할인돼요</span>';
+    }
+  } else {
+    // C안
+    if (hasPackage) {
+      if (hasNormal) {
+        packageBannerTitle.innerHTML = '패키지로 사면 쿠폰가보다 <span class="price-highlight">87,000원 더 저렴</span>';
+      } else {
+        packageBannerTitle.innerHTML = '패키지로 사면 여기서 <span class="price-highlight">261,000원 더 저렴</span>';
+      }
+    } else {
+      packageBannerTitle.innerHTML = '패키지로 구매하면 <span class="price-highlight">더 할인돼요</span>';
+    }
+  }
+
+  if (hasPackage && hasCart) {
+    packageBannerSub.textContent = '장바구니 쿠폰 중복 적용 가능';
+    packageBannerSub.style.display = '';
+  } else {
+    packageBannerSub.style.display = 'none';
+  }
+}
+
+function updateUI() {
+  updatePhone('B', 'B');
+  updatePhone('C', 'C');
+  updateSpecDescription();
+}
+
+function updateSpecDescription() {
+  const hasNormal = document.getElementById('normalCoupon').checked;
+  const hasPackage = document.getElementById('packageCoupon').checked;
+  const hasCart = document.getElementById('cartCoupon').checked;
+  const allOwned = document.getElementById('allCouponsOwned').checked;
+  const hasCoupon = hasNormal || hasPackage || hasCart;
+
+  const desc = document.getElementById('specDescription');
+  let html = '<strong>현재 적용된 스펙:</strong><br><br>';
+
+  html += '할인 적용 순서: 판매가';
+  if (hasNormal) html += ' → 상품쿠폰';
+  if (hasCart) html += ' → 장바구니쿠폰';
+  html += '<br><br>';
+
+  html += '1. 쿠폰할인가: ';
+  html += hasNormal ? '<span class="spec-badge active">노출</span>' : '<span class="spec-badge inactive">미노출</span>';
+  html += '<br>';
+
+  html += '2. 쿠폰 버튼: ';
+  if (!hasCoupon) {
+    html += '<span class="spec-badge inactive">미노출</span>';
+  } else if (allOwned) {
+    html += '<span class="spec-badge active">받은쿠폰보기</span>';
+  } else {
+    html += '<span class="spec-badge active">쿠폰 받기</span>';
+  }
+  html += '<br>';
+
+  html += '3. 장바구니쿠폰: ';
+  if (!hasCart) {
+    html += '<span class="spec-badge inactive">미노출</span>';
+  } else if (hasNormal) {
+    html += '<span class="spec-badge active">"쿠폰가에서" 문구</span>';
+  } else {
+    html += '<span class="spec-badge active">"여기서" 문구</span>';
+  }
+  html += '<br>';
+
+  html += '4. 패키지쿠폰:<br>';
+  html += '&nbsp;&nbsp;<span class="plan-tag b" style="font-size:10px;padding:1px 6px;">B</span> ';
+  if (hasPackage) {
+    html += '<span class="spec-badge active">할인가 직접 노출</span>';
+  } else {
+    html += '<span class="spec-badge active">배너 노출 (가격 없음)</span>';
+  }
+  if (hasPackage && hasCart) html += ' + 중복적용 문구';
+  html += '<br>';
+  html += '&nbsp;&nbsp;<span class="plan-tag c" style="font-size:10px;padding:1px 6px;">C</span> ';
+  if (hasPackage) {
+    if (hasNormal) {
+      html += '<span class="spec-badge active">쿠폰가 대비 차액</span>';
+    } else {
+      html += '<span class="spec-badge active">판매가 대비 차액</span>';
+    }
+  } else {
+    html += '<span class="spec-badge active">배너 노출 (가격 없음)</span>';
+  }
+  if (hasPackage && hasCart) html += ' + 중복적용 문구';
+
+  desc.innerHTML = html;
+}
+
+function handleCouponClick() {
+  const allOwned = document.getElementById('allCouponsOwned');
+  if (!allOwned.checked) {
+    allOwned.checked = true;
+    updateUI();
+  }
+}
+
+// Initial render
+updateUI();
+</script>
+
+</body>
+</html>
