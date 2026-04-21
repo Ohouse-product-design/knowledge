@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#f9fafb">
+<title>AI 시대, 디자인 리더의 역할</title>
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #f9fafb;
+  --bg2: #ffffff;
+  --text: #191f28;
+  --text2: #6b7684;
+  --text3: #b0b8c1;
+  --blue: #3182f6;
+  --blue-soft: rgba(49,130,246,0.08);
+  --red: #f04452;
+  --red-soft: rgba(240,68,82,0.08);
+  --amber: #f59e0b;
+  --amber-soft: rgba(245,158,11,0.08);
+  --green: #12b886;
+  --green-soft: rgba(18,184,134,0.08);
+  --purple: #8b5cf6;
+  --purple-soft: rgba(139,92,246,0.08);
+  --divider: rgba(0,0,0,0.05);
+  --surface: #f5f6f8;
+}
+
+html { color-scheme: light; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg); color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+}
+
+a { color: var(--blue); text-decoration: none; border-bottom: 1px solid rgba(49,130,246,0.25); }
+a:hover { border-bottom-color: var(--blue); }
+
+.deck { width: 100%; height: 100%; position: relative; }
+
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 72px 120px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  transform: translateX(30px);
+  overflow-y: auto;
+}
+.slide.active { opacity: 1; pointer-events: auto; transform: translateX(0); }
+.slide.exit-left { opacity: 0; transform: translateX(-30px); pointer-events: none; }
+.slide.center { align-items: center; text-align: center; padding: 72px 100px; }
+@media (prefers-reduced-motion: reduce) {
+  .slide, .slide.active, .slide.exit-left { transition: none; transform: none; }
+}
+
+.progress { position: fixed; top: 0; left: 0; height: 2px; background: var(--blue); transition: width 0.35s ease; z-index: 100; }
+.page-num { position: fixed; bottom: 28px; right: 40px; font-size: 12px; color: var(--text3); z-index: 100; font-variant-numeric: tabular-nums; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
+.nav-hint { position: fixed; bottom: 28px; left: 40px; font-size: 11px; color: var(--text3); z-index: 100; letter-spacing: 0.02em; }
+
+h1 { font-size: 56px; font-weight: 800; line-height: 1.2; letter-spacing: -1.4px; text-wrap: balance; }
+h2 { font-size: 44px; font-weight: 800; line-height: 1.25; letter-spacing: -0.8px; text-wrap: balance; }
+h3 { font-size: 22px; font-weight: 700; line-height: 1.4; letter-spacing: -0.3px; margin-top: 28px; margin-bottom: 10px; }
+
+.desc { font-size: 17px; font-weight: 400; color: var(--text2); line-height: 1.75; margin-top: 16px; max-width: 780px; }
+.slide.center .desc { margin-left: auto; margin-right: auto; }
+
+.blue { color: var(--blue); }
+.red { color: var(--red); }
+.amber { color: var(--amber); }
+.green { color: var(--green); }
+.purple { color: var(--purple); }
+.muted { color: var(--text2); }
+strong { font-weight: 700; color: var(--text); }
+
+.chip { display: inline-block; font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 18px; letter-spacing: -0.1px; }
+.chip.blue { color: var(--blue); }
+.chip.amber { color: var(--amber); }
+.chip.green { color: var(--green); }
+.chip.purple { color: var(--purple); }
+
+.bar { width: 32px; height: 3px; background: var(--blue); border-radius: 2px; margin: 28px 0; }
+.slide.center .bar { margin: 28px auto; }
+
+.key-msg { font-size: 34px; font-weight: 700; line-height: 1.5; letter-spacing: -0.5px; margin: 32px auto; max-width: 900px; }
+
+.bg-num { position: absolute; right: 100px; bottom: 40px; font-size: 240px; font-weight: 900; line-height: 1; opacity: 0.03; letter-spacing: -10px; color: var(--text); pointer-events: none; }
+
+/* Giant hook display */
+.hook-big {
+  font-size: 120px; font-weight: 900; line-height: 1; letter-spacing: -6px;
+  color: var(--text); font-variant-numeric: tabular-nums; margin-top: 12px;
+}
+.hook-big .strike { color: var(--text3); text-decoration: line-through; text-decoration-thickness: 8px; text-decoration-color: var(--red); margin-right: 18px; }
+.hook-big .glow { color: var(--green); }
+.hook-sub { font-size: 22px; color: var(--text2); margin-top: 18px; line-height: 1.55; letter-spacing: -0.3px; font-weight: 500; }
+.hook-sub strong { color: var(--text); }
+
+/* Quote block */
+.quote-block {
+  font-size: 28px; line-height: 1.55; color: var(--text); font-weight: 500;
+  max-width: 900px; margin-top: 28px; padding: 32px 36px;
+  background: var(--bg2); border-left: 4px solid var(--blue); border-radius: 0 14px 14px 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  letter-spacing: -0.3px;
+}
+.quote-block .q-from { display: block; margin-top: 20px; font-size: 15px; color: var(--text2); font-weight: 500; letter-spacing: -0.1px; }
+.quote-block strong { color: var(--blue); font-weight: 700; }
+
+.steps { margin-top: 32px; max-width: 820px; }
+.step { display: flex; gap: 22px; padding: 18px 0; border-bottom: 1px solid var(--divider); }
+.step:last-child { border-bottom: none; }
+.step-n { font-size: 14px; font-weight: 800; color: var(--blue); width: 26px; flex-shrink: 0; padding-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: 0.03em; }
+.step-body { flex: 1; min-width: 0; }
+.step-t { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.2px; }
+.step-d { font-size: 15px; color: var(--text2); line-height: 1.65; }
+.step-d strong { color: var(--text); font-weight: 600; }
+
+.grid3 { display: flex; gap: 32px; max-width: 1100px; margin-top: 36px; align-items: flex-start; }
+.grid3 .item { flex: 1; min-width: 0; }
+.grid3 .n { font-size: 13px; font-weight: 800; color: var(--blue); margin-bottom: 8px; letter-spacing: 0.03em; font-variant-numeric: tabular-nums; }
+.grid3 .n.amber { color: var(--amber); }
+.grid3 .n.green { color: var(--green); }
+.grid3 .n.purple { color: var(--purple); }
+.grid3 .t { font-size: 20px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.2px; }
+.grid3 .d { font-size: 14px; color: var(--text2); line-height: 1.65; }
+.grid3 .d strong { color: var(--text); font-weight: 600; }
+
+.grid2 { display: flex; gap: 40px; max-width: 1020px; margin-top: 32px; align-items: flex-start; }
+.grid2 .item { flex: 1; min-width: 0; }
+.grid2 .t { font-size: 20px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.2px; }
+.grid2 .d { font-size: 15px; color: var(--text2); line-height: 1.7; }
+
+.list { list-style: none; }
+.list li { position: relative; padding: 9px 0 9px 20px; font-size: 17px; line-height: 1.65; color: var(--text2); }
+.list li::before { content: ''; position: absolute; left: 0; top: 20px; width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+.list.red li::before { background: var(--red); }
+.list.amber li::before { background: var(--amber); }
+.list.green li::before { background: var(--green); }
+.list li strong { color: var(--text); font-weight: 600; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.tag { font-size: 13px; font-weight: 600; color: var(--blue); background: var(--blue-soft); padding: 5px 12px; border-radius: 8px; letter-spacing: -0.1px; }
+.tag.amber { color: var(--amber); background: var(--amber-soft); }
+.tag.red { color: var(--red); background: var(--red-soft); }
+.tag.green { color: var(--green); background: var(--green-soft); }
+.tag.purple { color: var(--purple); background: var(--purple-soft); }
+.tag.gray { color: var(--text2); background: rgba(0,0,0,0.04); }
+
+.highlight { background: var(--blue-soft); border-left: 3px solid var(--blue); padding: 20px 24px; border-radius: 0 10px 10px 0; margin-top: 24px; max-width: 880px; font-size: 17px; line-height: 1.65; color: var(--text); }
+.highlight.amber { background: var(--amber-soft); border-left-color: var(--amber); }
+.highlight.red { background: var(--red-soft); border-left-color: var(--red); }
+.highlight.green { background: var(--green-soft); border-left-color: var(--green); }
+.highlight.purple { background: var(--purple-soft); border-left-color: var(--purple); }
+.highlight strong { color: var(--text); }
+
+.metric-row { display: flex; gap: 48px; margin-top: 32px; max-width: 1000px; }
+.metric-item { flex: 1; }
+.metric-item .big { font-size: 56px; font-weight: 900; color: var(--blue); line-height: 1; letter-spacing: -2px; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+.metric-item .big.amber { color: var(--amber); }
+.metric-item .big.green { color: var(--green); }
+.metric-item .big.red { color: var(--red); }
+.metric-item .t { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.metric-item .d { font-size: 14px; color: var(--text2); line-height: 1.65; }
+
+/* Phase cards */
+.phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 32px; max-width: 1200px; }
+.phase-card { background: var(--bg2); border: 1px solid var(--divider); border-radius: 14px; padding: 22px 20px; }
+.phase-card .ph-n { font-size: 12px; font-weight: 800; color: var(--blue); letter-spacing: 0.05em; margin-bottom: 6px; }
+.phase-card .ph-t { font-size: 17px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.2px; }
+.phase-card .ph-items { display: flex; flex-direction: column; gap: 6px; }
+.phase-card .ph-item { font-size: 13px; color: var(--text2); padding: 4px 0; border-top: 1px dashed var(--divider); padding-top: 8px; line-height: 1.5; }
+.phase-card .ph-item:first-child { border-top: none; padding-top: 0; }
+.phase-card .ph-item strong { color: var(--text); font-weight: 600; }
+.phase-card.p1 { border-top: 3px solid var(--blue); }
+.phase-card.p2 { border-top: 3px solid var(--green); }
+.phase-card.p3 { border-top: 3px solid var(--amber); }
+.phase-card.p4 { border-top: 3px solid var(--purple); }
+.phase-card.p1 .ph-n { color: var(--blue); }
+.phase-card.p2 .ph-n { color: var(--green); }
+.phase-card.p3 .ph-n { color: var(--amber); }
+.phase-card.p4 .ph-n { color: var(--purple); }
+
+/* Case Cards */
+.cases { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 30px; max-width: 1200px; }
+.case-card { background: var(--bg2); border: 1px solid var(--divider); border-radius: 14px; padding: 20px 22px; }
+.case-card .c-who { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.case-card .c-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--blue-soft); color: var(--blue); font-weight: 800; font-size: 11px; display: flex; align-items: center; justify-content: center; letter-spacing: -0.2px; }
+.case-card .c-name { font-size: 14px; font-weight: 700; letter-spacing: -0.1px; }
+.case-card .c-phase { font-size: 11px; color: var(--text3); margin-left: auto; letter-spacing: 0.03em; font-weight: 600; }
+.case-card .c-t { font-size: 18px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.2px; }
+.case-card .c-d { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.case-card.blue { border-left: 3px solid var(--blue); }
+.case-card.blue .c-avatar { background: var(--blue-soft); color: var(--blue); }
+.case-card.green { border-left: 3px solid var(--green); }
+.case-card.green .c-avatar { background: var(--green-soft); color: var(--green); }
+.case-card.amber { border-left: 3px solid var(--amber); }
+.case-card.amber .c-avatar { background: var(--amber-soft); color: var(--amber); }
+.case-card.purple { border-left: 3px solid var(--purple); }
+.case-card.purple .c-avatar { background: var(--purple-soft); color: var(--purple); }
+.case-card.red { border-left: 3px solid var(--red); }
+.case-card.red .c-avatar { background: var(--red-soft); color: var(--red); }
+
+/* Case detail layout */
+.case-detail { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; margin-top: 28px; max-width: 1200px; align-items: center; }
+.case-detail .c-left .c-who { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+.case-detail .c-left .c-badge { font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 100px; letter-spacing: 0.02em; }
+.case-detail .c-left .c-badge.blue { background: var(--blue-soft); color: var(--blue); }
+.case-detail .c-left .c-badge.green { background: var(--green-soft); color: var(--green); }
+.case-detail .c-left .c-badge.amber { background: var(--amber-soft); color: var(--amber); }
+.case-detail .c-left .c-badge.purple { background: var(--purple-soft); color: var(--purple); }
+.case-detail .c-left .c-badge.red { background: var(--red-soft); color: var(--red); }
+.case-detail .c-left .c-owner { font-size: 13px; color: var(--text2); font-weight: 600; }
+.case-detail .c-left h3 { font-size: 34px; margin-top: 0; margin-bottom: 12px; letter-spacing: -0.6px; line-height: 1.2; font-weight: 800; }
+.case-detail .c-left .c-sub { font-size: 16px; color: var(--text2); line-height: 1.7; margin-bottom: 20px; max-width: 500px; }
+.case-detail .c-img { background: var(--bg2); border: 1px solid var(--divider); border-radius: 14px; overflow: hidden; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+.case-detail .c-img img, .case-detail .c-img video { width: 100%; height: auto; display: block; border-radius: 8px; max-height: 500px; object-fit: contain; }
+.case-detail .c-img video { background: #000; }
+.case-detail .c-img img { background: transparent; }
+
+/* Secret slides */
+.secret-num { font-size: 13px; font-weight: 800; color: var(--blue); letter-spacing: 0.15em; margin-bottom: 14px; font-variant-numeric: tabular-nums; }
+.secret-h { font-size: 46px; font-weight: 800; line-height: 1.2; letter-spacing: -0.8px; margin-bottom: 6px; text-wrap: balance; }
+.secret-sub { font-size: 17px; color: var(--text2); line-height: 1.75; max-width: 780px; margin-top: 16px; }
+.secret-sub strong { color: var(--text); font-weight: 600; }
+
+.twobox { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; max-width: 1080px; }
+.twobox .bx { background: var(--bg2); border: 1px solid var(--divider); border-radius: 14px; padding: 24px 26px; }
+.twobox .bx.red-bx { border-left: 3px solid var(--red); }
+.twobox .bx.green-bx { border-left: 3px solid var(--green); }
+.twobox .bx.blue-bx { border-left: 3px solid var(--blue); }
+.twobox .bx .bx-h { font-size: 13px; font-weight: 800; letter-spacing: 0.08em; margin-bottom: 12px; }
+.twobox .bx.red-bx .bx-h { color: var(--red); }
+.twobox .bx.green-bx .bx-h { color: var(--green); }
+.twobox .bx.blue-bx .bx-h { color: var(--blue); }
+.twobox .bx .bx-t { font-size: 20px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.2px; line-height: 1.35; }
+.twobox .bx .bx-d { font-size: 14px; color: var(--text2); line-height: 1.7; }
+
+.link-hint { margin-top: 22px; font-size: 13px; color: var(--text3); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.link-hint a { font-size: 13px; color: var(--blue); border-bottom-color: transparent; font-weight: 600; }
+
+.inline {
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+  font-size: 0.85em; background: var(--blue-soft); color: var(--blue); padding: 2px 8px; border-radius: 5px; font-weight: 500;
+}
+
+.pull-quote { font-size: 46px; font-weight: 800; line-height: 1.3; letter-spacing: -0.9px; max-width: 980px; margin: 0 auto; text-wrap: balance; }
+.pull-quote .hl { color: var(--blue); }
+.pull-quote .hl-amber { color: var(--amber); }
+.pull-quote .hl-green { color: var(--green); }
+
+/* Arrow comparison for before/after */
+.ba { display: flex; align-items: center; gap: 24px; margin-top: 32px; }
+.ba-item { flex: 1; text-align: center; background: var(--bg2); border: 1px solid var(--divider); border-radius: 14px; padding: 36px 24px; }
+.ba-item .ba-label { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 10px; }
+.ba-item .ba-val { font-size: 64px; font-weight: 900; line-height: 1; letter-spacing: -2px; color: var(--text); font-variant-numeric: tabular-nums; }
+.ba-item .ba-val.red { color: var(--red); }
+.ba-item .ba-val.green { color: var(--green); }
+.ba-item .ba-desc { font-size: 14px; color: var(--text2); margin-top: 12px; line-height: 1.55; }
+.ba-arrow { color: var(--text3); font-size: 36px; flex-shrink: 0; }
+
+/* Landing banner */
+.banner-num {
+  font-size: 160px; font-weight: 900; color: var(--blue);
+  line-height: 1; letter-spacing: -7px; font-variant-numeric: tabular-nums;
+  margin-bottom: 16px;
+}
+.banner-num.green { color: var(--green); }
+.banner-num.amber { color: var(--amber); }
+.banner-num.red { color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress" style="width: 0%"></div>
+<div class="nav-hint">&larr; &rarr; or space</div>
+<div class="page-num" id="pageNum">01 / 23</div>
+
+<div class="deck">
+
+<!-- ====== 01. COVER ====== -->
+<section class="slide center active">
+  <div class="chip">Leadership Session &middot; 2026.04</div>
+  <h1>AI 시대,<br><span class="blue">디자인 리더</span>의 역할</h1>
+  <div class="bar"></div>
+  <p class="desc">팀원이 AI를 <strong>스스로 잘 쓰게 만드는</strong> 법<br>오늘의집 PD팀 실험 로그</p>
+  <div style="margin-top:56px; font-size:13px; color:var(--text3);">오늘의집 Head of PD &middot; Leadership Workshop</div>
+</section>
+
+<!-- ====== 02. HOOK - BIG NUMBER ====== -->
+<section class="slide center">
+  <div class="chip">실제로 있었던 일</div>
+  <div class="banner-num green">6일</div>
+  <h2 style="margin-top:8px;">디자인 ETA <span class="red" style="text-decoration:line-through; text-decoration-thickness:4px;">20일</span> &rarr; <span class="green">6일</span></h2>
+  <p class="desc" style="font-size:18px; max-width:700px; margin-top:22px;">
+    물류 어드민 과업.<br>
+    팀원 한 명이 AI 템플릿을 만들어서 <strong>70% 단축</strong>했습니다.
+  </p>
+  <div style="margin-top:28px; font-size:14px; color:var(--text3);">&mdash; 단조롭고 복잡한 과업일수록, AI 기회가 큽니다</div>
+</section>
+
+<!-- ====== 03. OPENING QUOTE ====== -->
+<section class="slide">
+  <div class="chip">Opening</div>
+  <h2>최근에 팀원에게 받은 <span class="blue">피드백</span></h2>
+
+  <div class="quote-block" style="max-width:940px; font-size:28px;">
+    "저도 제가 이렇게까지<br><strong>AI를 잘 쓰게 될 줄 몰랐어요.</strong><br>
+    요한님이 방향성을 잡아주시고<br>계속 독려해주신 덕분인 것 같아요."
+    <span class="q-from">&mdash; PD팀 팀원, 최근 1on1에서</span>
+  </div>
+
+  <p class="desc" style="margin-top:36px; font-size:19px; max-width:820px;">
+    오늘은&mdash; <strong style="color:var(--text); font-size:22px;">팀원이 AI를 스스로 잘 쓰게 만드는 저만의 노하우</strong>를<br>전수해드리려고 합니다.
+  </p>
+</section>
+
+<!-- ====== 04. TENSION - why this matters ====== -->
+<section class="slide center">
+  <div class="chip amber">Why this matters</div>
+  <div class="pull-quote" style="margin-top:24px;">
+    "나만 AI 잘 쓰는 리더" vs<br>
+    "<span class="hl">팀원이 AI 잘 쓰는</span> 리더"
+  </div>
+  <div class="bar"></div>
+  <p class="desc" style="font-size:18px; margin-top:12px; max-width:760px;">
+    전자는 1명만큼 레버리지가 생기고,<br>
+    <strong style="color:var(--text);">후자는 팀원 수만큼 레버리지</strong>가 생깁니다.
+  </p>
+</section>
+
+<!-- ====== 05. AGENDA ====== -->
+<section class="slide">
+  <div class="chip">Agenda</div>
+  <h2>오늘 15분, <span class="blue">세 가지</span></h2>
+  <div class="steps">
+    <div class="step"><div class="step-n">01</div><div class="step-body"><div class="step-t">PD팀이 AI로 어떤 문제를 어떻게 풀고 있는지</div><div class="step-d">워크플로우 맵 &middot; 팀원별 실제 사례 5개</div></div></div>
+    <div class="step"><div class="step-n">02</div><div class="step-body"><div class="step-t">팀원이 AI를 스스로 잘 쓰게 만드는 <strong>5가지 노하우</strong></div><div class="step-d">발제 &middot; 1on1 &middot; 오너십 &middot; 하이라이트 &middot; 기회 포착</div></div></div>
+    <div class="step"><div class="step-n">03</div><div class="step-body"><div class="step-t">AI 시대 리더의 역할 + 지금 리더라서 좋은 점</div><div class="step-d">왜 1on1이 최고의 AI 스터디인가</div></div></div>
+  </div>
+</section>
+
+<!-- ====== 06. PART 1 DIVIDER ====== -->
+<section class="slide center">
+  <div class="bg-num">01</div>
+  <div class="chip blue">Part 01</div>
+  <h2>PD팀의 <span class="blue">AI 워크플로우</span></h2>
+  <p class="desc">디자이너의 모든 단계에 AI가 녹아있는 구조</p>
+</section>
+
+<!-- ====== 07. WORKFLOW MAP OVERVIEW ====== -->
+<section class="slide">
+  <div class="chip">Workflow Map</div>
+  <h2>PD팀 워크플로우는 <span class="blue">4개 Phase</span>로 구성</h2>
+  <p class="desc">단계마다 팀원이 직접 만든 AI 스킬&middot;플러그인이 붙어있습니다.</p>
+
+  <div class="phases">
+    <div class="phase-card p1">
+      <div class="ph-n">PHASE 01</div>
+      <div class="ph-t">Discovery &amp; 가설</div>
+      <div class="ph-items">
+        <div class="ph-item"><strong>Initiative-prioritizer</strong><br>임팩트&middot;노력&middot;리스크 스코링</div>
+        <div class="ph-item"><strong>Hypothesis-builder</strong><br>가설 &middot; 타겟 메트릭 자동 생성</div>
+        <div class="ph-item"><strong>Data-interpreter</strong><br>데이터 &rarr; 인사이트 변환</div>
+      </div>
+    </div>
+    <div class="phase-card p2">
+      <div class="ph-n">PHASE 02</div>
+      <div class="ph-t">Design &amp; Prototype</div>
+      <div class="ph-items">
+        <div class="ph-item"><strong>DS-prototype</strong><br>PRD + ODS &rarr; HTML 프로토타입</div>
+        <div class="ph-item"><strong>UT-prototyping</strong><br>UT 시나리오 &middot; 태스크 플로우</div>
+        <div class="ph-item"><strong>State-edge-simulator</strong><br>다양한 정책과 엣지 케이스 탐지</div>
+        <div class="ph-item"><strong>HTML-to-Figma-refiner</strong><br>AI 프로토타입 &rarr; Figma 정제</div>
+      </div>
+    </div>
+    <div class="phase-card p3">
+      <div class="ph-n">PHASE 03</div>
+      <div class="ph-t">Review &amp; Critique</div>
+      <div class="ph-items">
+        <div class="ph-item"><strong>Design-critique</strong><br>다각도 AI 크리틱 (원칙 기반)</div>
+        <div class="ph-item" style="color:var(--text3);">디자인 원칙 자동 적용 &middot; 팀 컨벤션 체크</div>
+      </div>
+    </div>
+    <div class="phase-card p4">
+      <div class="ph-n">PHASE 04</div>
+      <div class="ph-t">Handoff &amp; QA</div>
+      <div class="ph-items">
+        <div class="ph-item"><strong>Complete-handoff-doc</strong><br>스펙 + Figma 리소스 통합</div>
+        <div class="ph-item"><strong>Design-QA</strong><br>Claude Code로 CSS&middot;HTML 즉시 수정</div>
+        <div class="ph-item"><strong>UX-writing</strong><br>카피 생성 &middot; 맞춤법 체크</div>
+        <div class="ph-item"><strong>Responsive-support</strong><br>미디어 쿼리 자동 추가</div>
+      </div>
+    </div>
+  </div>
+
+  <a href="https://ohouse-product-design.github.io/AI-Workflow/%5BYH%5DLoadmap/ai-workflow-map.html" target="_blank" style="display:inline-flex; align-items:center; gap:10px; margin-top:26px; padding:14px 20px; background:var(--blue); color:#fff; border-radius:12px; font-size:15px; font-weight:700; letter-spacing:-0.1px; border-bottom:none; box-shadow:0 2px 8px rgba(49,130,246,0.2); text-decoration:none;">
+    <span style="font-size:16px;">&#128279;</span>
+    <span>전체 인터랙티브 워크플로우 맵 열기</span>
+    <span style="opacity:0.7; font-family:'JetBrains Mono', monospace; font-size:12px; margin-left:4px;">ai-workflow-map.html &rarr;</span>
+  </a>
+</section>
+
+<!-- ====== 08. CASES OVERVIEW ====== -->
+<section class="slide">
+  <div class="chip">Team Cases</div>
+  <h2>워크플로우는 <span class="blue">팀원이 직접</span> 만듭니다</h2>
+  <p class="desc">리더가 아니라 <strong>팀원이</strong> 자기 문제를 풀면서 나온 실제 결과물.</p>
+
+  <div class="cases">
+    <div class="case-card blue">
+      <div class="c-who"><div class="c-avatar">GD</div><div class="c-name">gongdee</div><div class="c-phase">PHASE 02</div></div>
+      <div class="c-t">DS-prototype</div>
+      <div class="c-d">PRD + ODS &rarr; Claude Code로 HTML 프로토타입 자동 생성</div>
+    </div>
+    <div class="case-card purple">
+      <div class="c-who"><div class="c-avatar">YH</div><div class="c-name">요한</div><div class="c-phase">PHASE 02</div></div>
+      <div class="c-t">State-edge-simulator</div>
+      <div class="c-d">다양한 정책과 엣지 케이스 자동 탐지. 쿠폰 조건 등 상태 매트릭스 시뮬레이션.</div>
+    </div>
+    <div class="case-card amber">
+      <div class="c-who"><div class="c-avatar">JK</div><div class="c-name">jack</div><div class="c-phase">PHASE 03</div></div>
+      <div class="c-t">Frame Feedback Assistant</div>
+      <div class="c-d">디자인 원칙 기반 다각도 AI 크리틱. 팀 원칙 저장 후 재사용.</div>
+    </div>
+    <div class="case-card purple">
+      <div class="c-who"><div class="c-avatar">GN</div><div class="c-name">Gina</div><div class="c-phase">PLATFORM</div></div>
+      <div class="c-t">O!Slice 플러그인</div>
+      <div class="c-d">Figma 프레임&middot;레이어 structure &amp; naming 자동화. LLM 친화적 구조.</div>
+    </div>
+    <div class="case-card red">
+      <div class="c-who"><div class="c-avatar">ST</div><div class="c-name">stella</div><div class="c-phase">PHASE 02</div></div>
+      <div class="c-t">HTML-to-Figma-refiner</div>
+      <div class="c-d">Pixel Diff. UI 오차범위 <strong>20% &rarr; 1% 미만</strong>으로 개선.</div>
+    </div>
+    <div class="case-card blue">
+      <div class="c-who"><div class="c-avatar">DN</div><div class="c-name">dana</div><div class="c-phase">PHASE 04</div></div>
+      <div class="c-t">Responsive-support</div>
+      <div class="c-d">프로토타입에 미디어 쿼리 자동 주입. 리사이즈 대응이 따라옴.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ====== 09. CASE - DS Prototype ====== -->
+<section class="slide">
+  <div class="case-detail">
+    <div class="c-left">
+      <div class="c-who">
+        <div class="c-badge blue">DS-prototype</div>
+        <div class="c-owner">Owner &middot; gongdee</div>
+      </div>
+      <h3>PRD + ODS 컴포넌트<br>&rarr; <span class="blue">동작하는 HTML</span></h3>
+      <p class="c-sub">디자인 시스템 토큰&middot;컴포넌트를 그대로 먹이고, PRD를 붙이면 프로토타입이 "동작"하는 상태로 생성됩니다.</p>
+      <ul class="list green">
+        <li>Figma 링크 하나로 시작 &middot; DS 토큰 자동 적용</li>
+        <li>브라우저에서 <strong>실제 인터랙션</strong>으로 UT</li>
+        <li>말이 아닌 <strong>동작</strong>으로 팀과 리뷰</li>
+      </ul>
+    </div>
+    <div class="c-img" style="padding:16px;">
+      <img src="assets/ds-prototype-demo.gif" alt="DS-prototype 데모">
+    </div>
+  </div>
+</section>
+
+<!-- ====== 10. CASE - State-edge-simulator ====== -->
+<section class="slide">
+  <div class="case-detail">
+    <div class="c-left">
+      <div class="c-who">
+        <div class="c-badge purple">State-edge-simulator</div>
+        <div class="c-owner">Owner &middot; 요한</div>
+      </div>
+      <h3>다양한 정책과 엣지 케이스를<br><span class="purple">자동으로 시뮬레이션</span></h3>
+      <p class="c-sub">쿠폰&middot;할인&middot;패키지 등 조건이 많은 영역에서 디자이너가 미처 보지 못한 상태를 AI가 대신 발견해줍니다.</p>
+      <ul class="list" style="margin-top:8px;">
+        <li style="color:var(--text2);"><strong>상태 매트릭스</strong> 자동 생성 &middot; 조건 토글로 즉시 확인</li>
+        <li style="color:var(--text2);">PDP 쿠폰 영역 등 <strong>복잡한 비즈니스 룰</strong> 검증에 효과</li>
+        <li style="color:var(--text2);">UT 전에 <strong>엣지 케이스 누락</strong> 사전 차단</li>
+      </ul>
+    </div>
+    <div class="c-img" style="padding:16px;">
+      <img src="assets/state-edge-simulator-demo.gif" alt="State-edge-simulator 데모">
+    </div>
+  </div>
+</section>
+
+<!-- ====== 11. CASE - Design Critique ====== -->
+<section class="slide">
+  <div class="case-detail">
+    <div class="c-left">
+      <div class="c-who">
+        <div class="c-badge amber">Frame Feedback Assistant</div>
+        <div class="c-owner">Owner &middot; jack</div>
+      </div>
+      <h3>디자인 원칙 기반<br><span class="amber">다각도 AI 크리틱</span></h3>
+      <p class="c-sub">팀 디자인 원칙을 저장해두고, 선택한 프레임에 그 원칙으로 크리틱을 돌립니다.</p>
+      <ul class="list amber">
+        <li>원칙 프리셋 저장 / 임시 원칙 주입 모두 지원</li>
+        <li>플로우 한줄 총평 + <strong>단계별 강점&middot;약점</strong> 자동 생성</li>
+        <li>"로그인 전환 개선 가능?" 같은 <strong>질문</strong>까지 반영</li>
+      </ul>
+    </div>
+    <div class="c-img" style="padding:16px;">
+      <img src="assets/design-critique.png" alt="Frame Feedback Assistant">
+    </div>
+  </div>
+</section>
+
+<!-- ====== 12. CASE - HTML to Figma Refiner ====== -->
+<section class="slide">
+  <div class="case-detail">
+    <div class="c-left">
+      <div class="c-who">
+        <div class="c-badge red">HTML-to-Figma-refiner</div>
+        <div class="c-owner">Owner &middot; stella</div>
+      </div>
+      <h3>Pixel Diff로<br><span class="red">오차 20% &rarr; 1%</span></h3>
+      <p class="c-sub">ODS Foundation 토큰화 + 컴포넌트&middot;아이콘 JS화 + Pixel Diff 루프. AI가 스스로 다시 맞춥니다.</p>
+      <ul class="list red">
+        <li>Figma ↔ HTML 히트맵 비교 &rarr; AI가 수정 포인트 스스로 식별</li>
+        <li><strong>한 번의 시도</strong>로 최대 1% 미만까지 수렴</li>
+        <li>수정 반복 8회 이내 완료</li>
+      </ul>
+    </div>
+    <div class="c-img" style="padding:16px;">
+      <img src="assets/html-to-figma-refiner-flow-diff.png" alt="HTML to Figma Refiner - Flow Diff Report">
+    </div>
+  </div>
+</section>
+
+<!-- ====== 13. CASE - Responsive Support ====== -->
+<section class="slide">
+  <div class="case-detail">
+    <div class="c-left">
+      <div class="c-who">
+        <div class="c-badge blue">Responsive-support</div>
+        <div class="c-owner">Owner &middot; dana</div>
+      </div>
+      <h3>리사이즈 대응을<br><span class="blue">한 줄로</span></h3>
+      <p class="c-sub">DS-prototype으로 만든 결과물에 미디어 쿼리 플러그인을 붙이면, 반응형 대응이 그냥 따라옵니다.</p>
+      <ul class="list">
+        <li>데스크톱&middot;태블릿&middot;모바일 브레이크포인트 자동 감지</li>
+        <li>Figma 화면과 <strong>시각적 일관성</strong> 유지</li>
+        <li>QA 공수 감소 &mdash; 디자이너가 직접 조정 가능</li>
+      </ul>
+    </div>
+    <div class="c-img">
+      <video src="assets/responsive-support-demo.mov" autoplay muted loop playsinline></video>
+    </div>
+  </div>
+</section>
+
+<!-- ====== 14. PART 2 DIVIDER ====== -->
+<section class="slide center">
+  <div class="bg-num">02</div>
+  <div class="chip blue">Part 02</div>
+  <h2>팀원이 AI를 스스로 잘 쓰게 만드는<br><span class="blue">5가지 노하우</span></h2>
+  <p class="desc">9개월 실험에서 나온 패턴</p>
+</section>
+
+<!-- ====== 15. SECRET 1 - 스스로 발제 ====== -->
+<section class="slide">
+  <div class="secret-num">NO&hairsp;HOW &middot; 01</div>
+  <h2 class="secret-h">리더가 정하지 말고,<br><span class="blue">팀원이 발제</span>하게 하세요</h2>
+  <p class="secret-sub">가장 시간 많이 들고, 가장 풀고 싶은 문제는 <strong>당사자가 제일 잘 압니다.</strong> 리더가 "이거 풀어봐"라고 떨어트리는 순간 주인의식이 사라집니다.</p>
+
+  <div class="twobox">
+    <div class="bx red-bx">
+      <div class="bx-h">&times; 안 되는 방식</div>
+      <div class="bx-t">"물류 어드민 AI로 좀 해봐"</div>
+      <div class="bx-d">리더가 발제 &rarr; 팀원은 <strong>"시켜서 함"</strong>의 자세. 결과물과 학습곡선 모두 낮음.</div>
+    </div>
+    <div class="bx green-bx">
+      <div class="bx-h">&check; 되는 방식</div>
+      <div class="bx-t">"가장 시간 많이 걸리는 게 뭐야?"</div>
+      <div class="bx-d">팀원이 <strong>자기 문제</strong>를 꺼냄 &rarr; 같이 논의하는 장을 만드는 것이 리더의 역할.</div>
+    </div>
+  </div>
+
+  <div class="highlight" style="margin-top:24px;">&#128200; <strong>같이 논의하는 장</strong>을 만드는 것이 가장 중요합니다. 발제는 팀원, 방향 조율은 리더.</div>
+</section>
+
+<!-- ====== 16. SECRET 2 - 1on1 아이데이션 ====== -->
+<section class="slide">
+  <div class="secret-num">NO&hairsp;HOW &middot; 02</div>
+  <h2 class="secret-h"><span class="blue">1on1</span>에서 진짜 풀고 싶은 문제를 듣고,<br>AI 솔루션을 <span class="blue">같이 아이데이션</span></h2>
+  <p class="secret-sub">전체 논의에서 나온 이슈 중 <strong>"내가 제일 풀고 싶은 건 이거"</strong>라는 개인의 진짜 관심사를 1on1에서 뽑아냅니다.</p>
+
+  <div class="steps" style="margin-top:18px;">
+    <div class="step"><div class="step-n">01</div><div class="step-body"><div class="step-t">전체 논의에서 나온 문제들을 리스트업</div><div class="step-d">팀원이 말한 pain point를 기억하고 정리</div></div></div>
+    <div class="step"><div class="step-n">02</div><div class="step-body"><div class="step-t">1on1에서 "이 중에 어떤 걸 제일 풀고 싶어?"</div><div class="step-d">강요가 아닌 <strong>선택</strong>. 본인이 고른 문제는 주인의식이 다름.</div></div></div>
+    <div class="step"><div class="step-n">03</div><div class="step-body"><div class="step-t">AI로 어떻게 풀 수 있을지 함께 아이데이션</div><div class="step-d">리더는 "이렇게 해"가 아니라 <strong>"이런 방법도 있는데?"</strong></div></div></div>
+  </div>
+</section>
+
+<!-- ====== 17. SECRET 3 - 개인 오너십 ====== -->
+<section class="slide">
+  <div class="secret-num">NO&hairsp;HOW &middot; 03</div>
+  <h2 class="secret-h">팀플 금지.<br><span class="blue">개인 오너십</span>과 명확한 <span class="blue">ETA</span></h2>
+  <p class="secret-sub">아이데이션한 액션 아이템은 <strong>절대 팀 프로젝트로 만들지 않습니다.</strong> 한 사람이 처음부터 끝까지 주도하게 하고, ETA를 명확히 박습니다.</p>
+
+  <div class="twobox" style="margin-top:28px;">
+    <div class="bx red-bx">
+      <div class="bx-h">&times; 팀플의 함정</div>
+      <div class="bx-t">"셋이서 같이 해봐"</div>
+      <div class="bx-d">책임이 분산되고 AI 학습곡선도 분산됨. 결국 <strong>아무도 깊이 못 배움.</strong></div>
+    </div>
+    <div class="bx green-bx">
+      <div class="bx-h">&check; 개인 오너십</div>
+      <div class="bx-t">"이건 네가 오너야. ETA는 2주."</div>
+      <div class="bx-d">혼자 부딪치는 과정에서 <strong>AI 역량이 압축적으로</strong> 쌓입니다.</div>
+    </div>
+  </div>
+
+  <div class="highlight amber" style="margin-top:24px;">
+    &#9888;&#65039; 솔루션이 별로일 수도, 생각보다 빨리 끝날 수도 있습니다. <strong>그래도 그 과정에서 반드시 좋은 결과물이 나옵니다.</strong>
+  </div>
+</section>
+
+<!-- ====== 18. SECRET 4 - 하이라이트 ====== -->
+<section class="slide">
+  <div class="secret-num">NO&hairsp;HOW &middot; 04</div>
+  <h2 class="secret-h">결과물을 <span class="blue">끊임없이 공유</span>&middot;<br><span class="blue">하이라이트</span>해주세요</h2>
+  <p class="secret-sub">팀을 넘어 <strong>회사 전체</strong>로 공유합니다. 개인의 업적이 회사에 보이는 것&mdash;이것이 다음 과업의 연료입니다.</p>
+
+  <div class="grid3" style="margin-top:28px;">
+    <div class="item">
+      <div class="n">01</div>
+      <div class="t">팀 내 공유</div>
+      <div class="d">PD weekly, 주간 싱크에서 <strong>데모 형태</strong>로. 완성도보다 과정도 환영.</div>
+    </div>
+    <div class="item">
+      <div class="n green">02</div>
+      <div class="t">전사 공유</div>
+      <div class="d">Slack 전사 채널에 녹화영상&middot;스크린샷. "이 사람이 이걸 만들었다"를 <strong>이름 붙여서.</strong></div>
+    </div>
+    <div class="item">
+      <div class="n amber">03</div>
+      <div class="t">피드백 루프</div>
+      <div class="d">다른 팀 반응&middot;요청이 돌아오면 본인에게 전달. <strong>영향력의 체감</strong>이 다음 연료.</div>
+    </div>
+  </div>
+
+  <div class="highlight green" style="margin-top:24px;">
+    &#127775; "<strong>하이라이트</strong>"가 핵심. 잘한 사람의 이름이 드러나야 조직이 따라옵니다. <strong>리더의 공이 아닌, 팀원의 공으로.</strong>
+  </div>
+</section>
+
+<!-- ====== 19. SECRET 5 - 기회 포착 ====== -->
+<section class="slide">
+  <div class="secret-num">NO&hairsp;HOW &middot; 05</div>
+  <h2 class="secret-h">별도 과업 말고,<br><span class="blue">현재 하는 일에서</span> 기회를 포착</h2>
+  <p class="secret-sub">"AI 과업"을 따로 부여하는 것보다, <strong>지금 하고 있는 일</strong>에서 AI로 바꿀 포인트를 찾는 것이 훨씬 임팩트가 큽니다.</p>
+
+  <div class="case-detail" style="margin-top:20px; grid-template-columns: 1.15fr 1fr;">
+    <div class="c-left">
+      <div class="c-who">
+        <div class="c-badge green">실제 사례 &middot; 물류 어드민</div>
+      </div>
+      <h3 style="font-size:26px;"><span class="green">ETA 20일 &rarr; 6일</span> (70% 단축)</h3>
+      <ul class="list green" style="margin-top:12px;">
+        <li>원래는 일반 물류 어드민 디자인 과업</li>
+        <li>디자인은 <strong>단순&middot;반복</strong>, 정책은 <strong>복잡</strong>&mdash;동기부여 낮은 영역</li>
+        <li>"이거야말로 AI 기회 아닐까?"&mdash;리더가 <strong>관점을 제시</strong></li>
+        <li>과업 <strong>1/3은 현행대로</strong> 진행하며 패턴 파악</li>
+        <li>중간에 끊고, 패턴을 <strong>AI 템플릿화</strong>하는 과업 추가 부여</li>
+      </ul>
+      <div class="highlight green" style="margin-top:16px; font-size:15px;">
+        &#127919; 단조로운 과업일수록 AI 기회. <strong>리더가 관점을 제시</strong>하는 것만으로 충분.
+      </div>
+    </div>
+    <div class="c-img" style="padding:16px;">
+      <img src="assets/lana-logistics-admin-share.png" alt="물류 어드민 템플릿 공유 (Lana)">
+    </div>
+  </div>
+</section>
+
+<!-- ====== 20. PART 3 DIVIDER ====== -->
+<section class="slide center">
+  <div class="bg-num">03</div>
+  <div class="chip blue">Part 03</div>
+  <h2>AI 시대, <span class="blue">리더의 역할</span></h2>
+  <p class="desc">"AI 잘 쓴다"가 아니라 "AI로 큰 문제를 푼다"</p>
+</section>
+
+<!-- ====== 21. LEADER ROLE ====== -->
+<section class="slide">
+  <div class="chip">Leader's Role</div>
+  <h2>리더가 잘 써야 할 건 <span class="blue">AI</span>가 아니라<br><span class="blue">"AI로 푸는 관점"</span></h2>
+
+  <div class="twobox" style="margin-top:30px;">
+    <div class="bx red-bx">
+      <div class="bx-h">&times; 흔한 리더상</div>
+      <div class="bx-t">"나도 AI 잘 써야지"</div>
+      <div class="bx-d">리더 혼자 프롬프트 연습. <strong>팀의 AI 역량은 리더를 넘지 못함.</strong></div>
+    </div>
+    <div class="bx green-bx">
+      <div class="bx-h">&check; AI 시대 리더</div>
+      <div class="bx-t">"AI로 어떤 큰 문제를 풀지?"</div>
+      <div class="bx-d">리더는 <strong>방향성</strong>을, 실행과 학습은 <strong>팀원</strong>이. 팀 AI 역량이 폭발적으로 성장.</div>
+    </div>
+  </div>
+
+  <div class="highlight" style="margin-top:28px;">
+    &#128200; 리더는 <strong>문제 발견자</strong>이자 <strong>관점 제공자</strong>. "이게 왜 AI 기회인지" 설명할 수 있어야 합니다.
+  </div>
+</section>
+
+<!-- ====== 22. FINAL MESSAGE ====== -->
+<section class="slide center">
+  <div class="chip blue">Final Message</div>
+  <div class="pull-quote" style="margin-top:24px;">
+    지금 시대에 <span class="hl">리더라서</span><br>다행이라고 생각합니다.
+  </div>
+  <div class="bar"></div>
+  <p class="desc" style="font-size:19px; max-width:860px; margin-top:10px;">
+    팀원들이 AI를 열심히 탐구하고,<br>
+    저는 <strong style="color:var(--text);">1on1에서 그 정보를 가장 많이 듣고 활용</strong>할 수 있는 포지션입니다.
+  </p>
+
+  <div class="metric-row" style="margin-top:44px; max-width:860px;">
+    <div class="metric-item"><div class="big">N&times;</div><div class="t">학습 레버리지</div><div class="d">팀원 수만큼 탐구 포인트 확보</div></div>
+    <div class="metric-item"><div class="big green">1on1</div><div class="t">최고의 AI 스터디</div><div class="d">현장 사례 + 전수받는 구조</div></div>
+    <div class="metric-item"><div class="big amber">&uarr;</div><div class="t">리더의 깊이</div><div class="d">누구보다 많이 알게 됨</div></div>
+  </div>
+</section>
+
+<!-- ====== 23. THANK YOU ====== -->
+<section class="slide center">
+  <div class="chip">Thank you</div>
+  <h1><span class="blue">질문과 토론</span></h1>
+  <div class="bar"></div>
+  <p class="key-msg" style="margin-top:24px;">
+    여러분 팀에서 <span class="blue">가장 풀고 싶은 문제</span>를<br>
+    오늘 누구에게 <strong>"네가 발제해볼래?"</strong><br>라고 해볼 수 있을까요?
+  </p>
+  <div style="margin-top:44px; font-size:13px; color:var(--text3);">AI 시대, 디자인 리더의 역할 &middot; 2026.04</div>
+</section>
+
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const progress = document.getElementById('progress');
+const pageNum = document.getElementById('pageNum');
+const total = slides.length;
+let current = 0;
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function goTo(i) {
+  if (i < 0 || i >= total) return;
+  const prev = slides[current];
+  const forward = i > current;
+  prev.classList.remove('active', 'exit-left');
+  if (forward) prev.classList.add('exit-left');
+  current = i;
+  slides[current].classList.remove('exit-left');
+  slides[current].classList.add('active');
+  const ratio = total > 1 ? (current / (total - 1)) : 0;
+  progress.style.width = (ratio * 100) + '%';
+  pageNum.textContent = pad(current + 1) + ' / ' + pad(total);
+  try { history.replaceState(null, '', '#' + (current + 1)); } catch (e) {}
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); goTo(current + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goTo(current - 1); }
+  else if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+  else if (e.key === 'End') { e.preventDefault(); goTo(total - 1); }
+});
+
+let tx = 0;
+document.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', (e) => {
+  const d = tx - e.changedTouches[0].clientX;
+  if (Math.abs(d) > 50) d > 0 ? goTo(current + 1) : goTo(current - 1);
+}, { passive: true });
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('a, .code, input, textarea, button, video')) return;
+  const x = e.clientX / window.innerWidth;
+  if (x > 0.75) goTo(current + 1);
+  else if (x < 0.25) goTo(current - 1);
+});
+
+const hash = parseInt(location.hash.replace('#', ''), 10);
+if (!isNaN(hash) && hash >= 1 && hash <= total) goTo(hash - 1);
+else goTo(0);
+</script>
+</body>
+</html>
